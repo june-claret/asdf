@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunar Calendar Medication Tracker</title>
+    <style>
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 100vw;
+            margin: 0 auto;
+            padding: 10px;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .control-frame {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+        
+        .cycle-button {
+            padding: 8px 16px;
+            background: #007cba;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .cycle-button:hover {
+            background: #005a87;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 4px;
+            width: 100%;
+            height: calc(100vh - 200px);
+        }
+        
+        .day-box {
+            border: 1px solid #ccc;
+            padding: 6px;
+            background: white;
+            cursor: pointer;
+            overflow-y: auto;
+            font-size: clamp(8px, 1.2vw, 12px);
+            line-height: 1.1;
+            word-wrap: break-word;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .day-box.current-day {
+            background: #ffff99 !important;
+        }
+        
+        .day-box:hover {
+            background: #f9f9f9;
+        }
+        
+        .day-header {
+            font-weight: bold;
+            margin-bottom: 3px;
+            font-size: clamp(9px, 1.4vw, 14px);
+        }
+        
+        .moon-phase {
+            color: blue;
+            font-size: clamp(7px, 1vw, 11px);
+            margin-bottom: 2px;
+        }
+        
+        .menstrual-phase {
+            color: darkred;
+            font-size: clamp(7px, 1vw, 11px);
+            margin-bottom: 3px;
+        }
+        
+        .medication-text {
+            flex-grow: 1;
+            font-size: clamp(7px, 1vw, 10px);
+            overflow-y: auto;
+        }
+        
+        .moon-emoji {
+            font-size: 14px;
+            margin-right: 4px;
+        }
+        
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .edit-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        
+        .edit-textarea {
+            width: 100%;
+            height: 200px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        
+        .edit-buttons {
+            text-align: right;
+            margin-top: 10px;
+        }
+        
+        .edit-button {
+            padding: 8px 16px;
+            margin-left: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .save-button {
+            background: #28a745;
+            color: white;
+        }
+        
+        .cancel-button {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .edit-button:hover {
+            opacity: 0.8;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .calendar-grid {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(8, 1fr);
+                gap: 2px;
+                height: calc(100vh - 180px);
+            }
+            
+            .day-box {
+                padding: 4px;
+            }
+            
+            .control-frame {
+                margin-bottom: 10px;
+                padding: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .calendar-grid {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(10, 1fr);
+                gap: 2px;
+            }
+            
+            .day-box {
+                padding: 3px;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .calendar-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(15, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Medical Disclaimer -->
+        <div style="background: #f8d7da; border: 2px solid #c62828; padding: 12px 120px 12px 12px; margin: 10px 0; border-radius: 6px; font-size: 12px; line-height: 1.4; position: relative; color: #5d1a1d;">
+            <div style="cursor: pointer; user-select: none;" onclick="toggleDisclaimer()" id="disclaimerHeader">
+                <strong>⚠️ MEDICAL DISCLAIMER:</strong> This application is for personal tracking purposes only and does not constitute medical advice, diagnosis, or treatment. Always consult your physician before making any medication changes.
+                <span style="position: absolute; right: 12px; top: 12px; font-weight: bold; color: black;">▼ Click to expand</span>
+            </div>
+            <div id="disclaimerFull" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #c62828;">
+                <strong>Special Warning:</strong> Some medications, like hormones, can be extremely dangerous without proper medical supervision. 
+                <strong>Cyclical hormone protocols present additional risks</strong> and should only be attempted by individuals with 
+                advanced breathing practices and mastery of internal energy regulation techniques. You could seriously hurt yourself 
+                by not heeding this warning. This app cannot provide such guidance.
+                <br><br>
+                <strong>Limitation of Liability:</strong> Use at your own risk. No warranties provided. The developer assumes no liability 
+                for any health outcomes or damages. Users are solely responsible for their medical care decisions.
+            </div>
+        </div>
+        
+        <div class="control-frame">
+            <button class="cycle-button" id="cycleButton">Show menstrual cycle data</button>
+            <button class="cycle-button" id="importButton" style="margin-left: 10px;">Import JSON</button>
+            <button class="cycle-button" id="exportButton" style="margin-left: 10px;">Export JSON</button>
+            <input type="file" id="fileInput" accept=".json" style="display: none;">
+        </div>
+        
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Days will be generated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="edit-modal" id="editModal">
+        <div class="edit-content">
+            <h3 id="editTitle">Edit Medication Regimen</h3>
+            <textarea class="edit-textarea" id="editTextarea" placeholder="Enter medication regimen..."></textarea>
+            <div class="edit-buttons">
+                <button class="edit-button cancel-button" id="cancelButton">Cancel</button>
+                <button class="edit-button save-button" id="saveButton">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LunarMedsApp {
+            constructor() {
+                this.medicationRegimens = this.loadState();
+                this.menstrualCycleEnabled = false;
+                this.currentLunarDay = this.getMidnightAlignedLunarDay();
+                this.editingDay = null;
+                
+                this.moonEmojis = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
+                
+                this.initializeEventListeners();
+                this.updateCalendar();
+                this.scheduleUpdate();
+                
+                // Auto-save every 30 seconds
+                setInterval(() => this.saveState(), 30000);
+            }
+            
+            getMidnightAlignedLunarData() {
+                const now = new Date();
+                const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                
+                // Reference new moon (Feb 9, 2024 00:00 UTC)
+                const newMoonBase = new Date(2024, 1, 9, 0, 0, 0);
+                
+                // Calculate days since reference
+                const diffDays = (midnight - newMoonBase) / (24 * 60 * 60 * 1000);
+                
+                // Lunar month length in days
+                const lunarMonth = 29.53058867;
+                
+                // Calculate current fraction and phase
+                const fraction = (diffDays % lunarMonth) / lunarMonth;
+                const phase = diffDays % lunarMonth;
+                
+                return { phase, fraction };
+            }
+            
+            getMidnightAlignedLunarDay() {
+                const { phase } = this.getMidnightAlignedLunarData();
+                const adjustedPhase = phase >= 28 ? 28 : phase;
+                return Math.round(adjustedPhase) + 1; // Convert to 1-based day
+            }
+            
+            scheduleUpdate() {
+                // Check for day changes every 5 minutes
+                setTimeout(() => {
+                    this.checkForDayChange();
+                    this.scheduleUpdate();
+                }, 300000);
+            }
+            
+            checkForDayChange() {
+                const newLunarDay = this.getMidnightAlignedLunarDay();
+                if (newLunarDay !== this.currentLunarDay) {
+                    this.currentLunarDay = newLunarDay;
+                    this.updateCalendar();
+                    console.log(`Day changed to lunar day ${newLunarDay}`);
+                }
+            }
+            
+            initializeEventListeners() {
+                // Cycle button
+                document.getElementById('cycleButton').addEventListener('click', () => {
+                    this.toggleMenstrualCycle();
+                });
+                
+                // Import/Export buttons
+                document.getElementById('importButton').addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+                
+                document.getElementById('exportButton').addEventListener('click', () => {
+                    this.exportData();
+                });
+                
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    this.importData(e);
+                });
+                
+                // Modal buttons
+                document.getElementById('saveButton').addEventListener('click', () => {
+                    this.saveRegimen();
+                });
+                
+                document.getElementById('cancelButton').addEventListener('click', () => {
+                    this.closeEditModal();
+                });
+                
+                // Close modal when clicking outside
+                document.getElementById('editModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'editModal') {
+                        this.closeEditModal();
+                    }
+                });
+            }
+            
+            createCalendarGrid() {
+                const grid = document.getElementById('calendarGrid');
+                grid.innerHTML = '';
+                
+                for (let i = 0; i < 29; i++) {
+                    const dayBox = document.createElement('div');
+                    dayBox.className = 'day-box';
+                    dayBox.dataset.day = i;
+                    dayBox.addEventListener('click', () => this.editRegimen(i));
+                    grid.appendChild(dayBox);
+                }
+            }
+            
+            updateCalendar() {
+                if (!document.querySelector('.day-box')) {
+                    this.createCalendarGrid();
+                }
+                
+                const currentDay = this.currentLunarDay - 1; // Convert to 0-based
+                const dayBoxes = document.querySelectorAll('.day-box');
+                
+                dayBoxes.forEach((box, i) => {
+                    // Update current day highlighting
+                    box.classList.toggle('current-day', i === currentDay);
+                    
+                    // Get data for this day
+                    const regimen = this.medicationRegimens[i] || '';
+                    const moonPhase = this.getMoonPhase(i);
+                    const menstrualPhase = this.menstrualCycleEnabled ? this.getMenstrualPhase(i) : '';
+                    
+                    // Build content
+                    let content = '';
+                    
+                    // Day header with moon emoji
+                    const moonEmoji = this.moonEmojis[Math.floor((i / 29) * 8) % 8];
+                    content += `<div class="day-header">${moonEmoji} Day ${i + 1}`;
+                    if (i === currentDay) {
+                        content += ' TODAY';
+                    }
+                    if (i === 28) { // Day 29 (0-based index 28)
+                        content += ' (1.5 days)';
+                    }
+                    content += '</div>';
+                    
+                    // Moon phase
+                    if (moonPhase) {
+                        content += `<div class="moon-phase">${moonPhase}</div>`;
+                    }
+                    
+                    // Menstrual phase
+                    if (menstrualPhase) {
+                        content += `<div class="menstrual-phase">${menstrualPhase}</div>`;
+                    }
+                    
+                    // Medication text
+                    const displayText = regimen.length > 150 ? 
+                        regimen.substring(0, 150) + '...\n(double click for more)' : 
+                        regimen;
+                    content += `<div class="medication-text">${displayText.replace(/\n/g, '<br>')}</div>`;
+                    
+                    box.innerHTML = content;
+                });
+            }
+            
+            getMoonPhase(day) {
+                const moonPhases = {
+                    0: "New Moon", 4: "Waxing Crescent", 8: "First Quarter",
+                    12: "Waxing Gibbous", 15: "Full Moon", 19: "Waning Gibbous",
+                    23: "Last Quarter", 26: "Waning Crescent"
+                };
+                return moonPhases[day % 29] || '';
+            }
+            
+            getMenstrualPhase(day) {
+                if (day >= 0 && day < 4) return "Menstrual<br>Follicular";
+                if (day >= 4 && day < 15) return "Follicular";
+                if (day >= 15 && day < 16) return "Ovulation<br>Luteal";
+                if (day >= 16 && day < 29) return "Luteal";
+                return '';
+            }
+            
+            toggleMenstrualCycle() {
+                this.menstrualCycleEnabled = !this.menstrualCycleEnabled;
+                const button = document.getElementById('cycleButton');
+                button.textContent = this.menstrualCycleEnabled ? 
+                    'Hide menstrual cycle data' : 'Show menstrual cycle data';
+                this.updateCalendar();
+            }
+            
+            editRegimen(day) {
+                this.editingDay = day;
+                const modal = document.getElementById('editModal');
+                const title = document.getElementById('editTitle');
+                const textarea = document.getElementById('editTextarea');
+                
+                title.textContent = `Edit Medication Regimen for Day ${day + 1}`;
+                textarea.value = this.medicationRegimens[day] || '';
+                modal.style.display = 'block';
+                textarea.focus();
+            }
+            
+            saveRegimen() {
+                if (this.editingDay !== null) {
+                    const textarea = document.getElementById('editTextarea');
+                    this.medicationRegimens[this.editingDay] = textarea.value.trim();
+                    this.saveState();
+                    this.updateCalendar();
+                    this.closeEditModal();
+                }
+            }
+            
+            closeEditModal() {
+                document.getElementById('editModal').style.display = 'none';
+                this.editingDay = null;
+            }
+            
+            loadState() {
+                try {
+                    const saved = localStorage.getItem('lunarMedsRegimens');
+                    if (saved) {
+                        return JSON.parse(saved);
+                    }
+                } catch (e) {
+                    console.error('Failed to load state:', e);
+                }
+                
+                // Default to empty regimens for privacy
+                return Array(29).fill("");
+            }
+            
+            exportData() {
+                const data = {
+                    regimens: this.medicationRegimens,
+                    exported: new Date().toISOString(),
+                    version: "1.0"
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lunar-calendar-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            importData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        // Support both new format and legacy array format
+                        if (data.regimens && Array.isArray(data.regimens)) {
+                            this.medicationRegimens = data.regimens;
+                        } else if (Array.isArray(data)) {
+                            this.medicationRegimens = data;
+                        } else {
+                            throw new Error('Invalid file format');
+                        }
+                        
+                        // Ensure we have exactly 29 entries
+                        while (this.medicationRegimens.length < 29) {
+                            this.medicationRegimens.push("");
+                        }
+                        this.medicationRegimens = this.medicationRegimens.slice(0, 29);
+                        
+                        this.saveState();
+                        this.updateCalendar();
+                        alert('Data imported successfully!');
+                        
+                    } catch (error) {
+                        alert('Error importing file: Invalid JSON format');
+                        console.error('Import error:', error);
+                    }
+                };
+                reader.readAsText(file);
+                
+                // Reset file input
+                event.target.value = '';
+            }
+            
+            saveState() {
+                try {
+                    localStorage.setItem('lunarMedsRegimens', JSON.stringify(this.medicationRegimens));
+                } catch (e) {
+                    console.error('Failed to save state:', e);
+                }
+            }
+        }
+        
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new LunarMedsApp();
+        });
+        
+        // Disclaimer toggle function
+        function toggleDisclaimer() {
+            const full = document.getElementById('disclaimerFull');
+            const header = document.getElementById('disclaimerHeader');
+            const arrow = header.querySelector('span');
+            
+            if (full.style.display === 'none') {
+                full.style.display = 'block';
+                                    arrow.textContent = '▲ Click to collapse';
+            } else {
+                full.style.display = 'none';
+                                    arrow.textContent = '▼ Click to expand';
+            }
+        }
+    </script>
+</body>
+</html>
