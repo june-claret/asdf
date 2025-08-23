@@ -34,23 +34,27 @@
     body.dark .view-button{background:#26303b;color:var(--sub)}
     body.dark .view-button.active{background:var(--accent);color:#0c1116}
 
-    .dropdown-container{position:relative;display:inline-block;flex:1;}
-    .dropdown-button{padding:8px 14px;background:var(--ok);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;width:100%;height:40px;}
+    .dropdown-container{position:relative;display:inline-block;flex:1;min-width:0;}
+    .dropdown-button{padding:8px 14px;background:var(--ok);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;width:100%;height:40px;line-height:24px;display:flex;align-items:center;justify-content:center}
     .dropdown-button:hover{filter:brightness(.95)}
     .dropdown-content{display:none;position:absolute;background:var(--surface);min-width:160px;box-shadow:0 8px 16px rgba(0,0,0,.25);border-radius:6px;z-index:10;margin-top:2px;overflow:hidden;border:1px solid rgba(0,0,0,.08);width:100%;}
     .dropdown-content.show{display:block}
     .dropdown-item{color:var(--text);padding:10px 14px;display:block;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-size:14px}
     .dropdown-item:hover{background:rgba(127,127,127,.12)}
 
-    .cycle-controls{display:flex;align-items:center;gap:5px;background:var(--surface);padding:5px;border-radius:4px;height:40px;flex:1;}
+    .cycle-controls{display:flex;align-items:center;gap:5px;background:var(--surface);padding:5px;border-radius:4px;height:40px;flex:1;min-width:0;}
     .shift-button{padding:4px 8px;background:var(--accent-2);color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:12px}
     .shift-button:hover{filter:brightness(.95)}
     .shift-display{font-size:12px;color:var(--sub);min-width:60px;text-align:center}
-    .cycle-button{padding:8px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:18px;flex:1;height:40px;}
+    .cycle-button{padding:8px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:18px;flex:1;min-width:0;height:40px;display:flex;align-items:center;justify-content:center}
     .cycle-button:hover{filter:brightness(.95)}
 
-    .dark-toggle{padding:8px 12px;background:#445160;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;flex:1;height:40px;}
+    .dark-toggle{padding:8px 12px;background:#445160;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:18px;flex:1;min-width:0;height:40px;display:flex;align-items:center;justify-content:center}
     body.dark .dark-toggle{background:#2b3642}
+
+    /* NEW: Compact actions row to keep 🩸 💻 ☀️/🌙 on ONE line (even on mobile) */
+    .actions-compact{display:flex;gap:8px;align-items:stretch;flex:1;min-width:0;}
+    .actions-compact > *{flex:1 1 0;min-width:0}
 
     /* Bottom disclaimer banner */
     .disclaimer-banner{
@@ -181,58 +185,30 @@
         .button-row{flex-direction:column;}
         .button-row > *{width:100%;}
         .view-selector{width:100%;justify-content:space-around}
+
+        /* Let cycle-controls take full width when visible within actions-compact slot */
         .cycle-controls{justify-content:center;width:100%}
+
+        /* Original mobile widths (still fine elsewhere) */
         .dropdown-container,.dark-toggle,.cycle-button{width:100%}
+
         .calendar-grid{grid-template-columns:repeat(auto-fit, minmax(95px, 1fr));grid-auto-rows:minmax(100px, auto);gap:2px}
         .gregorian-day{min-height:74px;font-size:9.5px}
         .day-box{padding:4px}
         .mood-row{overflow-x:auto;white-space:nowrap}
 
-        /* Turn the hormone panel into a bottom sheet */
-        #hormonePanel{
-            position:fixed;
-            left:0; right:0; bottom:60px;
-            z-index:9990;
-            margin:0;
-            border-top-left-radius:12px; border-top-right-radius:12px;
-            border-bottom-left-radius:0; border-bottom-right-radius:0;
-            box-shadow:0 -8px 30px rgba(0,0,0,.4);
-            padding:8px 0 10px 0; /* separate header and content; inner padding below */
-            max-height:calc(100vh - 120px);
-            transform: translateY(calc(100% - var(--sheet-peek)));
-            transition: transform .28s ease;
-            display:none; /* still controlled by JS when feature enabled */
-        }
-        #hormonePanel[data-state="expanded"]{
-            transform: translateY(0);
-        }
-        .sheet-handle{
-            display:block; width:44px; height:4px; border-radius:999px; background:var(--muted);
-            margin:6px auto 8px; opacity:.75;
-        }
-        .sheet-header{
-            display:flex; align-items:center; justify-content:space-between;
-            padding:0 12px 8px 12px;
-        }
-        .sheet-title{ font-weight:700; font-size:14px; }
-        .sheet-toggle{
-            background:var(--accent); color:#fff; border:none; border-radius:999px;
-            padding:6px 10px; font-size:12px; cursor:pointer;
-        }
-        #hormoneInner{
-            padding:0 10px 8px;
-            overflow:auto;
-            max-height: calc(100vh - 120px - 44px); /* viewport minus header/handle */
-        }
-        #hormoneGraph{ height:200px; }
-        .graph-caption{ padding:0 2px; }
+        /* Keep the compact actions on a SINGLE LINE */
+        .actions-compact{flex-wrap:nowrap}
+        .actions-compact .dropdown-container,
+        .actions-compact .dark-toggle,
+        .actions-compact .cycle-button,
+        .actions-compact #cycleControls{width:auto} /* override 100% width inside compact row */
     }
 
     @media (max-width:480px){
         .calendar-grid{grid-template-columns:repeat(auto-fit, minmax(85px, 1fr));}
         .day-box{padding:3px; font-size: clamp(8px, 3vw, 11px);}
         .gregorian-day{font-size: clamp(8px, 3vw, 10px);}
-        .cycle-controls{width:100%}
         .view-selector{width:100%;justify-content:space-around}
     }
 
@@ -297,6 +273,7 @@
 
 <div class="container" id="appContainer" style="display:none">
     <div class="control-frame">
+        <!-- Row 1: Data view toggle -->
         <div class="button-row">
             <div class="view-selector" data-group="data">
                 <button class="view-button active" onclick="setDataView('medication', this)">Medications</button>
@@ -308,24 +285,30 @@
             </div>
         </div>
 
+        <!-- Row 3: Compact actions that must remain one line on mobile -->
         <div class="button-row full">
+          <div class="actions-compact" role="group" aria-label="Quick actions">
+            <!-- Slot A: menstrual button OR cycle controls (one is hidden) -->
             <button class="cycle-button" id="cycleButton" onclick="toggleMenstrualCycle()" title="Toggle menstrual cycle">🩸</button>
 
             <div class="cycle-controls" id="cycleControls" style="display:none;">
-                <button class="shift-button" onclick="shiftMenstrualCycle(-1)">◀</button>
-                <span class="shift-display" id="shiftDisplay">Shift: 0</span>
-                <button class="shift-button" onclick="shiftMenstrualCycle(1)">▶</button>
+                <button class="shift-button" onclick="shiftMenstrualCycle(-1)" title="Shift earlier">◀</button>
+                <span class="shift-display" id="shiftDisplay" aria-live="polite">Shift: 0</span>
+                <button class="shift-button" onclick="shiftMenstrualCycle(1)" title="Shift later">▶</button>
             </div>
 
+            <!-- Slot B: data dropdown -->
             <div class="dropdown-container">
-                <button class="dropdown-button" onclick="toggleDropdown()">Data ▼</button>
-                <div class="dropdown-content" id="dataDropdown">
-                    <button class="dropdown-item" onclick="importData()">Import JSON</button>
-                    <button class="dropdown-item" onclick="exportData()">Export JSON</button>
+                <button class="dropdown-button" onclick="toggleDropdown()" title="Data menu" aria-haspopup="menu" aria-expanded="false">💻</button>
+                <div class="dropdown-content" id="dataDropdown" role="menu">
+                    <button class="dropdown-item" onclick="importData()" role="menuitem">Import JSON</button>
+                    <button class="dropdown-item" onclick="exportData()" role="menuitem">Export JSON</button>
                 </div>
             </div>
 
-            <button class="dark-toggle" onclick="toggleDarkMode()" id="darkToggle">🌙 Dark</button>
+            <!-- Slot C: theme toggle -->
+            <button class="dark-toggle" onclick="toggleDarkMode()" id="darkToggle" title="Toggle theme">🌙</button>
+          </div>
         </div>
     </div>
 
@@ -1126,7 +1109,12 @@ function changeMonth(direction) { if (app) app.changeMonth(direction); }
 function goToToday() { if (app) app.goToToday(); }
 function saveEditor(){ if (app) app.saveEditor(); }
 
-function toggleDropdown(){ document.getElementById('dataDropdown').classList.toggle('show'); }
+function toggleDropdown(){
+    const dd = document.getElementById('dataDropdown');
+    const btn = dd?.previousElementSibling;
+    dd.classList.toggle('show');
+    if (btn) btn.setAttribute('aria-expanded', dd.classList.contains('show') ? 'true' : 'false');
+}
 function importData(){ document.getElementById('fileInput').click(); toggleDropdown(); }
 function exportData(){ if (app) app.exportData(); toggleDropdown(); }
 
@@ -1148,7 +1136,8 @@ function updateDarkToggleLabel(){
     const b = document.getElementById('darkToggle');
     if (!b) return;
     const dark = document.body.classList.contains('dark');
-    b.textContent = dark ? '☀️ Light' : '🌙 Dark';
+    // Emoji-only label per request
+    b.textContent = dark ? '☀️' : '🌙';
 }
 
 function showConsent(){ document.getElementById('consentOverlay').style.display='flex'; }
@@ -1180,6 +1169,8 @@ function switchEdTab(which){
 window.addEventListener('click', (e) => {
     if (!e.target.closest('.dropdown-container')) {
         const dd = document.getElementById('dataDropdown'); if (dd) dd.classList.remove('show');
+        const btn = document.querySelector('.dropdown-container .dropdown-button');
+        if (btn) btn.setAttribute('aria-expanded','false');
     }
 });
 
