@@ -9,6 +9,7 @@
         --bg:#f5f5f5; --surface:#fff; --text:#222; --sub:#666; --muted:#9aa3a9;
         --accent:#007cba; --accent-2:#9c27b0; --ok:#28a745; --warn-bg:#fde8ea; --warn-border:#c62828; --warn-text:#5d1a1d;
         --grid:#e7eaee; --chip:#eef3f8;
+        --sheet-peek:64px; /* visible header height when collapsed on mobile */
     }
     body.dark{
         --bg:#0f1216; --surface:#151a20; --text:#e8eef5; --sub:#b7c1cc; --muted:#738092;
@@ -47,19 +48,28 @@
     .dark-toggle{padding:8px 12px;background:#445160;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px}
     body.dark .dark-toggle{background:#2b3642}
 
-    /* Grids */
-    .calendar-grid{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:4px;width:100%;height:calc(100vh - 240px);}
-    .gregorian-grid{display:none;width:100%;height:calc(100vh - 240px);}
-    body.show-graph .calendar-grid,
-    body.show-graph .gregorian-grid{height:calc(100vh - 420px);} /* shrink when graph visible */
-
+    /* Responsive Calendar & Gregorian layout (fluid, no forced vh heights) */
+    .calendar-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+        grid-auto-rows:minmax(120px, auto);
+        gap:4px;
+        width:100%;
+        height:auto;
+    }
+    .gregorian-grid{display:none;width:100%;height:auto;}
     .gregorian-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:10px;background:rgba(127,127,127,.08);border-radius:6px}
     .month-nav{display:flex;gap:10px;align-items:center}
     .month-button{padding:5px 10px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer}
     .month-button:hover{filter:brightness(.95)}
     .month-display{font-weight:bold;font-size:16px;min-width:150px;text-align:center}
 
-    .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;height:calc(100% - 60px)}
+    .week-grid{
+        display:grid;
+        grid-template-columns:repeat(7,1fr);
+        gap:2px;
+        /* let rows size to content; days enforce min-height */
+    }
     .weekday-header{background:#e0e0e0;padding:5px;text-align:center;font-weight:bold;font-size:12px}
     body.dark .weekday-header{background:#2a3440;color:var(--sub)}
     .gregorian-day{border:1px solid rgba(0,0,0,.12);padding:4px;background:var(--surface);min-height:84px;font-size:11px;overflow:hidden;cursor:pointer;border-radius:4px;position:relative}
@@ -88,11 +98,21 @@
     .mood-chip.active{outline:2px solid var(--accent)}
     body.dark .editable-content{border-color:#3a4654;background:#1b222b}
 
-    /* Hormone graph panel */
-    #hormonePanel{display:none;margin-top:10px;background:var(--surface);border:1px solid rgba(0,0,0,.12);border-radius:8px;padding:10px}
+    /* Hormone graph panel — desktop defaults (inline) */
+    #hormonePanel{
+        display:none;
+        margin-top:10px;
+        background:var(--surface);
+        border:1px solid rgba(0,0,0,.12);
+        border-radius:8px;
+        padding:10px 10px 12px;
+    }
     body.dark #hormonePanel{border-color:#2a3440}
     #hormoneGraph{width:100%;height:220px;display:block}
     .graph-caption{font-size:11px;color:var(--sub);margin-top:6px}
+
+    /* Sheet UI bits (hidden on desktop) */
+    .sheet-handle,.sheet-header{display:none}
 
     /* Consent overlay */
     #consentOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
@@ -119,24 +139,81 @@
     body.dark textarea.ed-input{background:#1b222b;border-color:#3a4654}
     .muted{color:var(--sub);font-size:12px}
 
-    /* Mobile tweaks */
+    /* Scrim behind the sheet (mobile only) */
+    #hormoneScrim{
+        position:fixed; inset:0; background:rgba(0,0,0,.45);
+        display:none; z-index:9985;
+    }
+    #hormoneScrim.show{ display:block; }
+
+    /* Mobile / tablet enhancements */
+    @media (max-width: 1024px){
+        .calendar-grid{
+            grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+            grid-auto-rows:minmax(110px, auto);
+        }
+    }
+
     @media (max-width:768px){
-        .calendar-grid{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(8,1fr);gap:2px;height:calc(100vh - 280px)}
-        body.show-graph .calendar-grid, body.show-graph .gregorian-grid{height:calc(100vh - 460px)}
-        .week-grid{font-size:10px}
+        .control-frame{flex-direction:column;align-items:stretch;gap:8px;margin-bottom:8px;padding:8px}
+        .view-selector{justify-content:space-around;width:100%}
+        .cycle-controls{justify-content:center;width:100%}
+        .dropdown-container,.dark-toggle,.cycle-button{width:100%}
+        .calendar-grid{grid-template-columns:repeat(auto-fit, minmax(95px, 1fr));grid-auto-rows:minmax(100px, auto);gap:2px}
         .gregorian-day{min-height:74px;font-size:9.5px}
         .day-box{padding:4px}
-        .control-frame{margin-bottom:8px;padding:8px}
         .mood-row{overflow-x:auto;white-space:nowrap}
+
+        /* Turn the hormone panel into a bottom sheet */
+        #hormonePanel{
+            position:fixed;
+            left:0; right:0; bottom:0;
+            z-index:9990;
+            margin:0;
+            border-top-left-radius:12px; border-top-right-radius:12px;
+            border-bottom-left-radius:0; border-bottom-right-radius:0;
+            box-shadow:0 -8px 30px rgba(0,0,0,.4);
+            padding:8px 0 10px 0; /* separate header and content; inner padding below */
+            max-height:calc(100vh - 60px);
+            transform: translateY(calc(100% - var(--sheet-peek)));
+            transition: transform .28s ease;
+            display:none; /* still controlled by JS when feature enabled */
+        }
+        #hormonePanel[data-state="expanded"]{
+            transform: translateY(0);
+        }
+        .sheet-handle{
+            display:block; width:44px; height:4px; border-radius:999px; background:var(--muted);
+            margin:6px auto 8px; opacity:.75;
+        }
+        .sheet-header{
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0 12px 8px 12px;
+        }
+        .sheet-title{ font-weight:700; font-size:14px; }
+        .sheet-toggle{
+            background:var(--accent); color:#fff; border:none; border-radius:999px;
+            padding:6px 10px; font-size:12px; cursor:pointer;
+        }
+        #hormoneInner{
+            padding:0 10px 8px;
+            overflow:auto;
+            max-height: calc(100vh - 60px - 44px); /* viewport minus header/handle */
+        }
+        #hormoneGraph{ height:200px; }
+        .graph-caption{ padding:0 2px; }
     }
+
     @media (max-width:480px){
-        .calendar-grid{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(10,1fr);gap:2px}
-        .day-box{padding:3px}
+        .calendar-grid{grid-template-columns:repeat(auto-fit, minmax(85px, 1fr));}
+        .day-box{padding:3px; font-size: clamp(8px, 3vw, 11px);}
+        .gregorian-day{font-size: clamp(8px, 3vw, 10px);}
         .cycle-controls{width:100%}
         .view-selector{width:100%;justify-content:space-around}
     }
+
     @media (max-width:320px){
-        .calendar-grid{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(15,1fr)}
+        .calendar-grid{grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); /* 1–2 col depending on width */ }
     }
 </style>
 </head>
@@ -192,6 +269,9 @@
     </div>
   </div>
 </div>
+
+<!-- Scrim for mobile sheet -->
+<div id="hormoneScrim" aria-hidden="true"></div>
 
 <div class="container" id="appContainer" style="display:none">
     <!-- Minimal disclaimer link that opens the consent page -->
@@ -249,10 +329,17 @@
         <div class="week-grid" id="weekGrid"></div>
     </div>
 
-    <!-- Hormone Graph Panel -->
-    <div id="hormonePanel">
-        <canvas id="hormoneGraph" width="1400" height="440" aria-label="Illustrative Estradiol and Progesterone pattern across a 29-day cycle"></canvas>
-        <div class="graph-caption">Illustrative only — actual hormone levels vary per person. Marker aligns to your shifted cycle day.</div>
+    <!-- Hormone Graph Panel (inline on desktop, bottom-sheet on mobile) -->
+    <div id="hormonePanel" role="dialog" aria-label="Hormone graph panel" data-state="collapsed">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-header" aria-hidden="false">
+            <div class="sheet-title">Hormone Graph</div>
+            <button class="sheet-toggle" id="sheetToggleBtn" type="button">Expand</button>
+        </div>
+        <div id="hormoneInner">
+            <canvas id="hormoneGraph" width="1400" height="440" aria-label="Illustrative Estradiol and Progesterone pattern across a 29-day cycle"></canvas>
+            <div class="graph-caption">Illustrative only — actual hormone levels vary per person. Marker aligns to your shifted cycle day.</div>
+        </div>
     </div>
 </div>
 
@@ -295,7 +382,9 @@ class LunarMedsApp {
                 document.getElementById('cycleControls').style.display = 'flex';
                 document.getElementById('cycleButton').textContent = 'Hide menstrual cycle';
                 document.body.classList.add('show-graph');
-                document.getElementById('hormonePanel').style.display = 'block';
+                document.getElementById('hormonePanel').style.display = this.isMobileSheet() ? 'block' : 'block';
+                // On mobile default collapsed; desktop inline visible
+                this.setSheetState(this.isMobileSheet() ? 'collapsed' : 'expanded', {silent:true});
                 this.drawHormoneGraph();
             }
             updateDarkToggleLabel();
@@ -319,9 +408,136 @@ class LunarMedsApp {
         }
 
         this._autosaveTimer = setInterval(() => this.saveAllState(), 30000);
-        window.addEventListener('resize', () => { if (this.menstrualCycleEnabled) this.drawHormoneGraph(); });
+
+        // Redraw graph on resize (keeps canvas crisp)
+        window.addEventListener('resize', () => {
+            if (this.menstrualCycleEnabled) this.drawHormoneGraph();
+            // Keep sheet state sensible if crossing breakpoint
+            this.syncSheetForViewport();
+        });
+
+        // Initialize sheet interactions
+        this.initHormoneSheet();
     }
 
+    /* ===== Mobile Sheet Helpers ===== */
+    isMobileSheet(){ return window.matchMedia('(max-width: 768px)').matches; }
+
+    initHormoneSheet(){
+        const panel = document.getElementById('hormonePanel');
+        const scrim = document.getElementById('hormoneScrim');
+        const toggleBtn = document.getElementById('sheetToggleBtn');
+
+        const expand = () => this.setSheetState('expanded');
+        const collapse = () => this.setSheetState('collapsed');
+
+        if (toggleBtn){
+            toggleBtn.addEventListener('click', () => {
+                const state = panel.getAttribute('data-state') === 'expanded' ? 'collapsed' : 'expanded';
+                this.setSheetState(state);
+            });
+        }
+        if (scrim){
+            scrim.addEventListener('click', collapse);
+        }
+        // Swipe handling — simple threshold gesture
+        let startY = 0, dragging = false, moved = false;
+        const start = (y) => { startY = y; dragging = true; moved = false; };
+        const move = (y, evt) => {
+            if (!dragging) return;
+            const dy = y - startY;
+            if (Math.abs(dy) > 10) moved = true;
+            // prevent background scroll while swiping
+            if (evt && moved) evt.preventDefault();
+        };
+        const end = (y) => {
+            if (!dragging) return;
+            const dy = y - startY;
+            dragging = false;
+            const isExpanded = panel.getAttribute('data-state') === 'expanded';
+            const THRESH = 40;
+            if (dy < -THRESH) { // swipe up
+                this.setSheetState('expanded');
+            } else if (dy > THRESH) { // swipe down
+                this.setSheetState('collapsed');
+            } else {
+                // snap to nearest meaningful state
+                this.setSheetState(isExpanded ? 'expanded' : 'collapsed');
+            }
+        };
+
+        const handleArea = panel; // entire panel (header/handle area is at the top)
+        // Touch events
+        handleArea.addEventListener('touchstart', (e)=> start(e.touches[0].clientY), {passive:true});
+        handleArea.addEventListener('touchmove',  (e)=> move(e.touches[0].clientY, e), {passive:false});
+        handleArea.addEventListener('touchend',   (e)=> end((e.changedTouches[0]||{}).clientY ?? startY));
+        // Mouse events (desktop/laptop)
+        handleArea.addEventListener('mousedown', (e)=>{
+            // only start drag if near the header area in mobile mode
+            if (!this.isMobileSheet()) return;
+            if (e.target.closest('.sheet-header') || e.clientY > window.innerHeight - 140) {
+                start(e.clientY);
+                const onMove = (ev)=> move(ev.clientY);
+                const onUp = (ev)=>{ end(ev.clientY); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+            }
+        });
+
+        // Start with correct sheet state for viewport
+        this.syncSheetForViewport();
+    }
+
+    setSheetState(state, opts={}){
+        const panel = document.getElementById('hormonePanel');
+        const scrim = document.getElementById('hormoneScrim');
+        const btn = document.getElementById('sheetToggleBtn');
+        if (!panel) return;
+
+        panel.setAttribute('data-state', state);
+        if (btn) btn.textContent = state === 'expanded' ? 'Collapse' : 'Expand';
+
+        // Scrim only on mobile + expanded
+        const showScrim = this.isMobileSheet() && state === 'expanded';
+        if (scrim){
+            scrim.classList.toggle('show', showScrim);
+        }
+
+        // Redraw canvas after transition to ensure correct width
+        if (!opts.silent){
+            // small delay to let layout settle
+            setTimeout(()=>{ if (this.menstrualCycleEnabled) this.drawHormoneGraph(); }, 180);
+        }
+    }
+
+    syncSheetForViewport(){
+        const panel = document.getElementById('hormonePanel');
+        if (!panel) return;
+        const visible = this.menstrualCycleEnabled;
+        // On desktop, make sure panel behaves inline and is expanded (no scrim)
+        if (!this.isMobileSheet()){
+            if (visible){
+                panel.style.display = 'block';
+                this.setSheetState('expanded', {silent:true});
+            } else {
+                panel.style.display = 'none';
+            }
+            const scrim = document.getElementById('hormoneScrim');
+            if (scrim) scrim.classList.remove('show');
+        } else {
+            // Mobile: if visible, show as sheet (collapsed by default)
+            if (visible){
+                panel.style.display = 'block';
+                if (panel.getAttribute('data-state') !== 'expanded' && panel.getAttribute('data-state') !== 'collapsed'){
+                    this.setSheetState('collapsed', {silent:true});
+                }
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+    }
+
+    /* ===== Core logic (unchanged features) ===== */
     calculateLunarPhase(date = new Date()) {
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
@@ -643,9 +859,19 @@ class LunarMedsApp {
         button.textContent = this.menstrualCycleEnabled ? 'Hide menstrual cycle' : 'Show menstrual cycle';
         controls.style.display = this.menstrualCycleEnabled ? 'flex' : 'none';
 
-        document.getElementById('hormonePanel').style.display = this.menstrualCycleEnabled ? 'block' : 'none';
-        document.body.classList.toggle('show-graph', this.menstrualCycleEnabled);
-        if (this.menstrualCycleEnabled) this.drawHormoneGraph();
+        const panel = document.getElementById('hormonePanel');
+        if (this.menstrualCycleEnabled) {
+            document.body.classList.add('show-graph');
+            panel.style.display = 'block';
+            // On mobile, open collapsed; on desktop, just expanded inline
+            this.setSheetState(this.isMobileSheet() ? 'collapsed' : 'expanded', {silent:true});
+            this.drawHormoneGraph();
+        } else {
+            document.body.classList.remove('show-graph');
+            panel.style.display = 'none';
+            const scrim = document.getElementById('hormoneScrim');
+            if (scrim) scrim.classList.remove('show');
+        }
 
         this.saveAllState();
         this.updateCalendar();
@@ -713,8 +939,10 @@ class LunarMedsApp {
                     this.menstrualCycleEnabled = data.menstrualVisible;
                     document.getElementById('cycleButton').textContent = this.menstrualCycleEnabled ? 'Hide menstrual cycle' : 'Show menstrual cycle';
                     document.getElementById('cycleControls').style.display = this.menstrualCycleEnabled ? 'flex' : 'none';
-                    document.getElementById('hormonePanel').style.display = this.menstrualCycleEnabled ? 'block' : 'none';
+                    const panel = document.getElementById('hormonePanel');
+                    panel.style.display = this.menstrualCycleEnabled ? 'block' : 'none';
                     document.body.classList.toggle('show-graph', this.menstrualCycleEnabled);
+                    this.syncSheetForViewport();
                 }
 
                 while (this.medicationRegimens.length < 29) this.medicationRegimens.push("");
