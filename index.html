@@ -1,564 +1,932 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lunar Calendar Medication Tracker</title>
-    <style>
-        body {
-            font-family: Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #f5f5f5;
-        }
-        
-        .container {
-            max-width: 100vw;
-            margin: 0 auto;
-            padding: 10px;
-            background: white;
-            min-height: 100vh;
-        }
-        
-        .control-frame {
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #f0f0f0;
-            border-radius: 5px;
-        }
-        
-        .cycle-button {
-            padding: 8px 16px;
-            background: #007cba;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .cycle-button:hover {
-            background: #005a87;
-        }
-        
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: repeat(6, 1fr);
-            gap: 4px;
-            width: 100%;
-            height: calc(100vh - 220px);
-        }
-        
-        .day-box {
-            border: 1px solid #ccc;
-            padding: 6px;
-            background: white;
-            cursor: pointer;
-            overflow-y: auto;
-            font-size: clamp(8px, 1.2vw, 12px);
-            line-height: 1.1;
-            word-wrap: break-word;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-        
-        .day-box.current-day {
-            background: #ffff99 !important;
-        }
-        
-        .day-box:hover {
-            background: #f9f9f9;
-        }
-        
-        .day-header {
-            font-weight: bold;
-            margin-bottom: 3px;
-            font-size: clamp(9px, 1.4vw, 14px);
-        }
-        
-        .moon-phase {
-            color: blue;
-            font-size: clamp(7px, 1vw, 11px);
-            margin-bottom: 2px;
-        }
-        
-        .menstrual-phase {
-            color: darkred;
-            font-size: clamp(7px, 1vw, 11px);
-            margin-bottom: 3px;
-        }
-        
-        .medication-text {
-            flex-grow: 1;
-            font-size: clamp(7px, 1vw, 10px);
-            overflow-y: auto;
-        }
-        
-        .moon-emoji {
-            font-size: 14px;
-            margin-right: 4px;
-        }
-        
-        .edit-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        
-        .edit-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80%;
-            overflow-y: auto;
-        }
-        
-        .edit-textarea {
-            width: 100%;
-            height: 200px;
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
-            resize: vertical;
-        }
-        
-        .edit-buttons {
-            text-align: right;
-            margin-top: 10px;
-        }
-        
-        .edit-button {
-            padding: 8px 16px;
-            margin-left: 8px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        .save-button {
-            background: #28a745;
-            color: white;
-        }
-        
-        .cancel-button {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .edit-button:hover {
-            opacity: 0.8;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lunar Calendar Medication Tracker</title>
+<style>
+    :root{
+        --bg:#f5f5f5; --surface:#fff; --text:#222; --sub:#666; --muted:#9aa3a9;
+        --accent:#007cba; --accent-2:#9c27b0; --ok:#28a745; --warn-bg:#fde8ea; --warn-border:#c62828; --warn-text:#5d1a1d;
+        --grid:#e7eaee; --chip:#eef3f8;
+    }
+    body.dark{
+        --bg:#0f1216; --surface:#151a20; --text:#e8eef5; --sub:#b7c1cc; --muted:#738092;
+        --accent:#5aa9ff; --accent-2:#c67aff; --ok:#3fd57c; --warn-bg:#2a171a; --warn-border:#b34753; --warn-text:#ffb8c0;
+        --grid:#232a33; --chip:#1f2730;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
 
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            .calendar-grid {
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(8, 1fr);
-                gap: 2px;
-                height: calc(100vh - 200px);
-            }
-            
-            .day-box {
-                padding: 4px;
-            }
-            
-            .control-frame {
-                margin-bottom: 10px;
-                padding: 8px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .calendar-grid {
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(10, 1fr);
-                gap: 2px;
-            }
-            
-            .day-box {
-                padding: 3px;
-            }
-        }
-        
-        @media (max-width: 320px) {
-            .calendar-grid {
-                grid-template-columns: repeat(2, 1fr);
-                grid-template-rows: repeat(15, 1fr);
-            }
-        }
-    </style>
+    .container{max-width:100vw;margin:0 auto;padding:10px;min-height:100vh;background:var(--surface);}
+
+    .control-frame{margin-bottom:10px;padding:10px;background:rgba(127,127,127,.08);border-radius:6px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    .view-selector{display:flex;gap:5px;background:var(--surface);padding:3px;border-radius:4px}
+    .view-button{padding:6px 12px;background:#e0e0e0;border:none;border-radius:3px;cursor:pointer;font-size:13px;transition:.2s;color:#333}
+    .view-button.active{background:var(--accent);color:#fff}
+    .view-button:hover:not(.active){background:#cfd3d7}
+    body.dark .view-button{background:#26303b;color:var(--sub)}
+    body.dark .view-button.active{background:var(--accent);color:#0c1116}
+
+    .dropdown-container{position:relative;display:inline-block}
+    .dropdown-button{padding:8px 14px;background:var(--ok);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px}
+    .dropdown-button:hover{filter:brightness(.95)}
+    .dropdown-content{display:none;position:absolute;background:var(--surface);min-width:160px;box-shadow:0 8px 16px rgba(0,0,0,.25);border-radius:6px;z-index:10;margin-top:2px;overflow:hidden;border:1px solid rgba(0,0,0,.08)}
+    .dropdown-content.show{display:block}
+    .dropdown-item{color:var(--text);padding:10px 14px;display:block;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-size:14px}
+    .dropdown-item:hover{background:rgba(127,127,127,.12)}
+
+    .cycle-controls{display:flex;align-items:center;gap:5px;background:var(--surface);padding:5px;border-radius:4px}
+    .shift-button{padding:4px 8px;background:var(--accent-2);color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:12px}
+    .shift-button:hover{filter:brightness(.95)}
+    .shift-display{font-size:12px;color:var(--sub);min-width:60px;text-align:center}
+    .cycle-button{padding:8px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px}
+    .cycle-button:hover{filter:brightness(.95)}
+
+    .dark-toggle{padding:8px 12px;background:#445160;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px}
+    body.dark .dark-toggle{background:#2b3642}
+
+    /* Grids */
+    .calendar-grid{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:4px;width:100%;height:calc(100vh - 240px);}
+    .gregorian-grid{display:none;width:100%;height:calc(100vh - 240px);}
+    body.show-graph .calendar-grid,
+    body.show-graph .gregorian-grid{height:calc(100vh - 420px);} /* shrink when graph visible */
+
+    .gregorian-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:10px;background:rgba(127,127,127,.08);border-radius:6px}
+    .month-nav{display:flex;gap:10px;align-items:center}
+    .month-button{padding:5px 10px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer}
+    .month-button:hover{filter:brightness(.95)}
+    .month-display{font-weight:bold;font-size:16px;min-width:150px;text-align:center}
+
+    .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;height:calc(100% - 60px)}
+    .weekday-header{background:#e0e0e0;padding:5px;text-align:center;font-weight:bold;font-size:12px}
+    body.dark .weekday-header{background:#2a3440;color:var(--sub)}
+    .gregorian-day{border:1px solid rgba(0,0,0,.12);padding:4px;background:var(--surface);min-height:84px;font-size:11px;overflow:hidden;cursor:pointer;border-radius:4px;position:relative}
+    .gregorian-day.other-month{background:rgba(127,127,127,.08);color:var(--muted)}
+    .gregorian-day.today{background:#fff3cd;color:#000}
+    body.dark .gregorian-day.today{background:#443b12;color:#fff}
+    .gregorian-date{font-weight:bold;margin-bottom:2px}
+    .gregorian-lunar-info{font-size:10px;color:var(--sub);margin-bottom:4px;display:flex;align-items:center;gap:4px}
+    .g-moon{font-size:12px}
+    .g-mood{position:absolute;top:4px;right:6px;font-size:14px}
+
+    .day-box{border:1px solid rgba(0,0,0,.12);padding:6px;background:var(--surface);cursor:pointer;overflow-y:auto;font-size:clamp(8px,1.2vw,12px);line-height:1.1;word-wrap:break-word;display:flex;flex-direction:column;min-height:0;position:relative;border-radius:4px}
+    .day-box.current-day{background:#ffff99 !important;color:#000}
+    body.dark .day-box{border-color:#2a3440}
+    .day-box:hover{background:rgba(127,127,127,.06)}
+    .mood-indicator{position:absolute;top:2px;right:4px;font-size:14px}
+    .day-header{font-weight:bold;margin-bottom:3px;font-size:clamp(9px,1.4vw,14px)}
+    .moon-phase{color:#2276ff;font-size:clamp(7px,1vw,11px);margin-bottom:2px}
+    .menstrual-phase{color:#b00020;font-size:clamp(7px,1vw,11px);margin-bottom:3px}
+    .day-content{flex-grow:1;font-size:clamp(7px,1vw,10px);overflow-y:auto}
+    .editable-content{background:rgba(127,127,127,.08);border:1px dashed rgba(0,0,0,.2);padding:2px;min-height:30px;cursor:text;white-space:pre-wrap;border-radius:4px}
+    .editable-content:focus{outline:2px solid var(--accent);background:var(--surface)}
+    .mood-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+    .mood-chip{background:var(--chip);border-radius:999px;padding:2px 8px;display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;border:1px solid rgba(0,0,0,.08)}
+    .mood-chip span{font-size:16px}
+    .mood-chip.active{outline:2px solid var(--accent)}
+    body.dark .editable-content{border-color:#3a4654;background:#1b222b}
+
+    /* Hormone graph panel */
+    #hormonePanel{display:none;margin-top:10px;background:var(--surface);border:1px solid rgba(0,0,0,.12);border-radius:8px;padding:10px}
+    body.dark #hormonePanel{border-color:#2a3440}
+    #hormoneGraph{width:100%;height:220px;display:block}
+    .graph-caption{font-size:11px;color:var(--sub);margin-top:6px}
+
+    /* Consent overlay */
+    #consentOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
+    #consentCard{max-width:760px;background:var(--surface);color:var(--text);border-radius:12px;padding:18px 18px 14px;border:2px solid var(--warn-border);box-shadow:0 10px 35px rgba(0,0,0,.35)}
+    #consentCard h2{margin:0 0 8px 0}
+    .consent-section{margin:10px 0;padding:10px;background:var(--warn-bg);border-radius:8px;border:1px solid var(--warn-border);color:var(--warn-text)}
+    .consent-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+    .btn{padding:8px 12px;border:none;border-radius:6px;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.secondary{background:#e0e0e0}
+    body.dark .btn.secondary{background:#2a3440;color:#cfd8e3}
+
+    /* Editor modal */
+    #editorOverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9998}
+    #editorCard{width:min(720px,94vw);max-height:86vh;overflow:auto;background:var(--surface);color:var(--text);border-radius:12px;border:1px solid rgba(0,0,0,.12);box-shadow:0 10px 35px rgba(0,0,0,.35);padding:12px}
+    .ed-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+    .ed-title{font-weight:700}
+    .ed-tabs{display:flex;gap:6px;margin:8px 0}
+    .ed-tab{padding:6px 10px;border-radius:999px;border:1px solid rgba(0,0,0,.12);background:var(--chip);cursor:pointer;font-size:13px}
+    .ed-tab.active{background:var(--accent);color:#fff;border-color:transparent}
+    .ed-section{margin-top:6px}
+    .ed-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+    textarea.ed-input{width:100%;min-height:120px;border-radius:8px;border:1px dashed rgba(0,0,0,.2);padding:8px;background:rgba(127,127,127,.08);color:inherit}
+    body.dark textarea.ed-input{background:#1b222b;border-color:#3a4654}
+    .muted{color:var(--sub);font-size:12px}
+
+    /* Mobile tweaks */
+    @media (max-width:768px){
+        .calendar-grid{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(8,1fr);gap:2px;height:calc(100vh - 280px)}
+        body.show-graph .calendar-grid, body.show-graph .gregorian-grid{height:calc(100vh - 460px)}
+        .week-grid{font-size:10px}
+        .gregorian-day{min-height:74px;font-size:9.5px}
+        .day-box{padding:4px}
+        .control-frame{margin-bottom:8px;padding:8px}
+        .mood-row{overflow-x:auto;white-space:nowrap}
+    }
+    @media (max-width:480px){
+        .calendar-grid{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(10,1fr);gap:2px}
+        .day-box{padding:3px}
+        .cycle-controls{width:100%}
+        .view-selector{width:100%;justify-content:space-around}
+    }
+    @media (max-width:320px){
+        .calendar-grid{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(15,1fr)}
+    }
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- Medical Disclaimer -->
-        <div style="background: #f8d7da; border: 2px solid #c62828; padding: 12px 120px 12px 12px; margin: 10px 0; border-radius: 6px; font-size: 12px; line-height: 1.4; position: relative; color: #5d1a1d;">
-            <div style="cursor: pointer; user-select: none;" onclick="toggleDisclaimer()" id="disclaimerHeader">
-                <strong>⚠️ MEDICAL DISCLAIMER:</strong> This application is for personal tracking purposes only and does not constitute medical advice, diagnosis, or treatment. Always consult your physician before making any medication changes.
-                <span style="position: absolute; right: 12px; top: 12px; font-weight: bold; color: black;">▼ Click to expand</span>
-            </div>
-            <div id="disclaimerFull" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #c62828;">
-                <strong>Special Warning:</strong> Some medications, like hormones, can be extremely dangerous without proper medical supervision. 
-                <strong>Cyclical hormone protocols present additional risks</strong> and should only be attempted by individuals with 
-                advanced breathing practices and mastery of internal energy regulation techniques. You could seriously hurt yourself 
-                by not heeding this warning. This app cannot provide such guidance.
-                <br><br>
-                <strong>Limitation of Liability:</strong> Use at your own risk. No warranties provided. The developer assumes no liability 
-                for any health outcomes or damages. Users are solely responsible for their medical care decisions.
-            </div>
-        </div>
-        
-        <div class="control-frame">
-            <button class="cycle-button" id="cycleButton">Show menstrual cycle data</button>
-            <button class="cycle-button" id="importButton" style="margin-left: 10px;">Import JSON</button>
-            <button class="cycle-button" id="exportButton" style="margin-left: 10px;">Export JSON</button>
-            <input type="file" id="fileInput" accept=".json" style="display: none;">
-        </div>
-        
-        <div class="calendar-grid" id="calendarGrid">
-            <!-- Days will be generated by JavaScript -->
-        </div>
+<!-- Consent / disclaimer overlay -->
+<div id="consentOverlay">
+  <div id="consentCard">
+    <h2>Before you start</h2>
+    <div class="consent-section" style="background:rgba(40,167,69,.08); border-color:rgba(40,167,69,.45); color:inherit;">
+      <strong>Privacy & data:</strong> Your entries are stored locally in your browser (localStorage). Clearing site data/cookies or switching devices will erase them. Use <em>Export JSON</em> to back up, <em>Import JSON</em> to restore.
+    </div>
+    <div class="consent-section">
+      <strong>Medical caution:</strong> Personal tracking only—this is not medical advice. Always consult a clinician before starting, stopping, or cycling any medication.
+      <br/><br/>
+      <strong>Cisgender women:</strong> Cycling alongside your natural cycle can be risky. Some drugs have narrow safety margins. If you experiment, work with a clinician.
+      <br/><br/>
+      <strong>Trans women:</strong> Hormone cycling carries significant risks and can strongly affect mood and health. Build grounding practices (e.g., yoga/meditation) and work with a clinician—ideally before starting.
+      <br/><br/>
+      <strong>Dosing caution:</strong> Smaller shifts are generally safer. Some medicines are potent at tiny doses. If something feels wrong, stay calm and seek appropriate care.
+      <br/><br/>
+      <strong>Liability:</strong> Use at your own risk. No warranties. You are responsible for your choices.
+    </div>
+    <div class="consent-actions">
+      <button class="btn primary" id="consentAccept">I Understand</button>
+    </div>
+  </div>
+</div>
+
+<!-- Day editor modal -->
+<div id="editorOverlay" role="dialog" aria-modal="true">
+  <div id="editorCard">
+    <div class="ed-header">
+      <div class="ed-title" id="edTitle">Edit Day</div>
+      <button class="btn secondary" onclick="closeEditor()">Close</button>
+    </div>
+    <div class="muted" id="edSubInfo"></div>
+    <div class="ed-tabs">
+      <button class="ed-tab active" id="tabMed" onclick="switchEdTab('med')">Medication</button>
+      <button class="ed-tab" id="tabNotes" onclick="switchEdTab('notes')">Notes & Mood</button>
+    </div>
+    <div class="ed-section" id="edMed">
+      <textarea id="edMedInput" class="ed-input" placeholder="Medication plan for this lunar day..."></textarea>
+    </div>
+    <div class="ed-section" id="edNotes" style="display:none">
+      <div class="mood-row" id="edMoodRow"></div>
+      <label class="muted">How you felt</label>
+      <textarea id="edFeeling" class="ed-input" placeholder="Feelings, symptoms, observations..."></textarea>
+      <label class="muted" style="margin-top:8px;display:block">Remedy</label>
+      <textarea id="edRemedy" class="ed-input" placeholder="What helped, what to try..."></textarea>
+    </div>
+    <div class="ed-actions">
+      <button class="btn primary" onclick="saveEditor()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="appContainer" style="display:none">
+    <!-- Minimal disclaimer link that opens the consent page -->
+    <div style="background: var(--warn-bg); border: 2px solid var(--warn-border); padding: 10px; margin: 10px 0; border-radius: 6px;">
+        <a href="#" onclick="showConsent(); return false;" style="color: var(--warn-text); font-weight: 700; text-decoration: underline;">
+            ⚠️ View medical disclaimer & privacy terms
+        </a>
     </div>
 
-    <!-- Edit Modal -->
-    <div class="edit-modal" id="editModal">
-        <div class="edit-content">
-            <h3 id="editTitle">Edit Medication Regimen</h3>
-            <textarea class="edit-textarea" id="editTextarea" placeholder="Enter medication regimen..."></textarea>
-            <div class="edit-buttons">
-                <button class="edit-button cancel-button" id="cancelButton">Cancel</button>
-                <button class="edit-button save-button" id="saveButton">Save</button>
+    <div class="control-frame">
+        <div class="view-selector" data-group="data">
+            <button class="view-button active" onclick="setDataView('medication', this)">Medication Data</button>
+            <button class="view-button" onclick="setDataView('notes', this)">Personal Notes</button>
+        </div>
+
+        <div class="view-selector" data-group="calendar">
+            <button class="view-button active" onclick="setCalendarView('lunar', this)">Lunar View</button>
+            <button class="view-button" onclick="setCalendarView('gregorian', this)">Gregorian View</button>
+        </div>
+
+        <button class="cycle-button" id="cycleButton" onclick="toggleMenstrualCycle()">Show menstrual cycle</button>
+
+        <div class="cycle-controls" id="cycleControls" style="display:none;">
+            <button class="shift-button" onclick="shiftMenstrualCycle(-1)">◀</button>
+            <span class="shift-display" id="shiftDisplay">Shift: 0</span>
+            <button class="shift-button" onclick="shiftMenstrualCycle(1)">▶</button>
+        </div>
+
+        <div class="dropdown-container">
+            <button class="dropdown-button" onclick="toggleDropdown()">Data ▼</button>
+            <div class="dropdown-content" id="dataDropdown">
+                <button class="dropdown-item" onclick="importData()">Import JSON</button>
+                <button class="dropdown-item" onclick="exportData()">Export JSON</button>
             </div>
         </div>
+
+        <button class="dark-toggle" onclick="toggleDarkMode()" id="darkToggle">🌙 Dark</button>
+
+        <input type="file" id="fileInput" accept=".json" style="display:none;"/>
     </div>
 
-    <script>
-        class LunarMedsApp {
-            constructor() {
-                this.medicationRegimens = this.loadState();
-                this.menstrualCycleEnabled = false;
-                this.currentLunarDay = this.getMidnightAlignedLunarDay();
-                this.editingDay = null;
-                
-                this.moonEmojis = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
-                
-                this.initializeEventListeners();
+    <!-- Lunar Calendar Grid -->
+    <div class="calendar-grid" id="calendarGrid"></div>
+
+    <!-- Gregorian Calendar Grid -->
+    <div class="gregorian-grid" id="gregorianGrid">
+        <div class="gregorian-header">
+            <div class="month-nav">
+                <button class="month-button" onclick="changeMonth(-1)">◀</button>
+                <div class="month-display" id="monthDisplay">January 2025</div>
+                <button class="month-button" onclick="changeMonth(1)">▶</button>
+            </div>
+            <button class="month-button" onclick="goToToday()">Today</button>
+        </div>
+        <div class="week-grid" id="weekGrid"></div>
+    </div>
+
+    <!-- Hormone Graph Panel -->
+    <div id="hormonePanel">
+        <canvas id="hormoneGraph" width="1400" height="440" aria-label="Illustrative Estradiol and Progesterone pattern across a 29-day cycle"></canvas>
+        <div class="graph-caption">Illustrative only — actual hormone levels vary per person. Marker aligns to your shifted cycle day.</div>
+    </div>
+</div>
+
+<script>
+class LunarMedsApp {
+    constructor() {
+        this.medicationRegimens = this.loadState('lunarMedsRegimens') || Array(29).fill("");
+        this.dayNotes = this.loadState('lunarMedsDayNotes') || Array.from({length:29}, () => ({feeling:"", remedy:"", mood:""}));
+        this.menstrualCycleEnabled = false;
+        this.menstrualShift = 0;
+        this.currentLunarDay = null;
+        this.dataView = 'medication';
+        this.calendarView = 'lunar';
+        this.currentMonth = new Date().getMonth();
+        this.currentYear = new Date().getFullYear();
+
+        this.moonEmojis = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
+        this.moodOptions = [
+            {e:'😊',k:'happy'},{e:'🙂',k:'calm'},{e:'😐',k:'neutral'},
+            {e:'😕',k:'off'},{e:'😔',k:'down'},{e:'😭',k:'cry'},
+            {e:'😤',k:'irritated'},{e:'😰',k:'anxious'},{e:'🤒',k:'sick'},
+            {e:'💪',k:'strong'},{e:'🧘',k:'grounded'}
+        ];
+
+        this.updateLunarDay();
+        this.initializeEventListeners();
+        this.updateCalendar();
+        this.scheduleUpdate();
+
+        const settings = this.loadState('lunarMedsSettings');
+        if (settings) {
+            if (typeof settings.menstrualShift === 'number') {
+                this.menstrualShift = settings.menstrualShift;
+                const sd = document.getElementById('shiftDisplay');
+                if (sd) sd.textContent = `Shift: ${this.menstrualShift}`;
+            }
+            if (settings.darkMode === true) document.body.classList.add('dark');
+            if (settings.menstrualVisible) {
+                this.menstrualCycleEnabled = true;
+                document.getElementById('cycleControls').style.display = 'flex';
+                document.getElementById('cycleButton').textContent = 'Hide menstrual cycle';
+                document.body.classList.add('show-graph');
+                document.getElementById('hormonePanel').style.display = 'block';
+                this.drawHormoneGraph();
+            }
+            updateDarkToggleLabel();
+             if (settings.calendarView) {
+                this.calendarView = settings.calendarView;
+                // update UI immediately
+                document.querySelectorAll('.view-selector[data-group="calendar"] .view-button')
+                    .forEach(btn => btn.classList.remove('active'));
+                const btn = document.querySelector(`.view-selector[data-group="calendar"] .view-button:nth-child(${this.calendarView==='lunar'?1:2})`);
+                if (btn) btn.classList.add('active');
+
+                if (this.calendarView === 'lunar') {
+                    document.getElementById('calendarGrid').style.display = 'grid';
+                    document.getElementById('gregorianGrid').style.display = 'none';
+                } else {
+                    document.getElementById('calendarGrid').style.display = 'none';
+                    document.getElementById('gregorianGrid').style.display = 'block';
+                }
                 this.updateCalendar();
-                this.scheduleUpdate();
-                
-                // Auto-save every 30 seconds
-                setInterval(() => this.saveState(), 30000);
-            }
-            
-            getMidnightAlignedLunarData() {
-                const now = new Date();
-                const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                
-                // Reference new moon (Feb 9, 2024 00:00 UTC)
-                const newMoonBase = new Date(2024, 1, 9, 0, 0, 0);
-                
-                // Calculate days since reference
-                const diffDays = (midnight - newMoonBase) / (24 * 60 * 60 * 1000);
-                
-                // Lunar month length in days
-                const lunarMonth = 29.53058867;
-                
-                // Calculate current fraction and phase
-                const fraction = (diffDays % lunarMonth) / lunarMonth;
-                const phase = diffDays % lunarMonth;
-                
-                return { phase, fraction };
-            }
-            
-            getMidnightAlignedLunarDay() {
-                const { phase } = this.getMidnightAlignedLunarData();
-                const adjustedPhase = phase >= 28 ? 28 : phase;
-                return Math.round(adjustedPhase) + 1; // Convert to 1-based day
-            }
-            
-            scheduleUpdate() {
-                // Check for day changes every 5 minutes
-                setTimeout(() => {
-                    this.checkForDayChange();
-                    this.scheduleUpdate();
-                }, 300000);
-            }
-            
-            checkForDayChange() {
-                const newLunarDay = this.getMidnightAlignedLunarDay();
-                if (newLunarDay !== this.currentLunarDay) {
-                    this.currentLunarDay = newLunarDay;
-                    this.updateCalendar();
-                    console.log(`Day changed to lunar day ${newLunarDay}`);
-                }
-            }
-            
-            initializeEventListeners() {
-                // Cycle button
-                document.getElementById('cycleButton').addEventListener('click', () => {
-                    this.toggleMenstrualCycle();
-                });
-                
-                // Import/Export buttons
-                document.getElementById('importButton').addEventListener('click', () => {
-                    document.getElementById('fileInput').click();
-                });
-                
-                document.getElementById('exportButton').addEventListener('click', () => {
-                    this.exportData();
-                });
-                
-                document.getElementById('fileInput').addEventListener('change', (e) => {
-                    this.importData(e);
-                });
-                
-                // Modal buttons
-                document.getElementById('saveButton').addEventListener('click', () => {
-                    this.saveRegimen();
-                });
-                
-                document.getElementById('cancelButton').addEventListener('click', () => {
-                    this.closeEditModal();
-                });
-                
-                // Close modal when clicking outside
-                document.getElementById('editModal').addEventListener('click', (e) => {
-                    if (e.target.id === 'editModal') {
-                        this.closeEditModal();
-                    }
-                });
-            }
-            
-            createCalendarGrid() {
-                const grid = document.getElementById('calendarGrid');
-                grid.innerHTML = '';
-                
-                for (let i = 0; i < 29; i++) {
-                    const dayBox = document.createElement('div');
-                    dayBox.className = 'day-box';
-                    dayBox.dataset.day = i;
-                    dayBox.addEventListener('click', () => this.editRegimen(i));
-                    grid.appendChild(dayBox);
-                }
-            }
-            
-            updateCalendar() {
-                if (!document.querySelector('.day-box')) {
-                    this.createCalendarGrid();
-                }
-                
-                const currentDay = this.currentLunarDay - 1; // Convert to 0-based
-                const dayBoxes = document.querySelectorAll('.day-box');
-                
-                dayBoxes.forEach((box, i) => {
-                    // Update current day highlighting
-                    box.classList.toggle('current-day', i === currentDay);
-                    
-                    // Get data for this day
-                    const regimen = this.medicationRegimens[i] || '';
-                    const moonPhase = this.getMoonPhase(i);
-                    const menstrualPhase = this.menstrualCycleEnabled ? this.getMenstrualPhase(i) : '';
-                    
-                    // Build content
-                    let content = '';
-                    
-                    // Day header with moon emoji
-                    const moonEmoji = this.moonEmojis[Math.floor((i / 29) * 8) % 8];
-                    content += `<div class="day-header">${moonEmoji} Day ${i + 1}`;
-                    if (i === currentDay) {
-                        content += ' TODAY';
-                    }
-                    if (i === 28) { // Day 29 (0-based index 28)
-                        content += ' (1.5 days)';
-                    }
-                    content += '</div>';
-                    
-                    // Moon phase
-                    if (moonPhase) {
-                        content += `<div class="moon-phase">${moonPhase}</div>`;
-                    }
-                    
-                    // Menstrual phase
-                    if (menstrualPhase) {
-                        content += `<div class="menstrual-phase">${menstrualPhase}</div>`;
-                    }
-                    
-                    // Medication text
-                    const displayText = regimen.length > 150 ? 
-                        regimen.substring(0, 150) + '...\n(double click for more)' : 
-                        regimen;
-                    content += `<div class="medication-text">${displayText.replace(/\n/g, '<br>')}</div>`;
-                    
-                    box.innerHTML = content;
-                });
-            }
-            
-            getMoonPhase(day) {
-                const moonPhases = {
-                    0: "New Moon", 4: "Waxing Crescent", 8: "First Quarter",
-                    12: "Waxing Gibbous", 15: "Full Moon", 19: "Waning Gibbous",
-                    23: "Last Quarter", 26: "Waning Crescent"
-                };
-                return moonPhases[day % 29] || '';
-            }
-            
-            getMenstrualPhase(day) {
-                if (day >= 0 && day < 4) return "Menstrual<br>Follicular";
-                if (day >= 4 && day < 15) return "Follicular";
-                if (day >= 15 && day < 16) return "Ovulation<br>Luteal";
-                if (day >= 16 && day < 29) return "Luteal";
-                return '';
-            }
-            
-            toggleMenstrualCycle() {
-                this.menstrualCycleEnabled = !this.menstrualCycleEnabled;
-                const button = document.getElementById('cycleButton');
-                button.textContent = this.menstrualCycleEnabled ? 
-                    'Hide menstrual cycle data' : 'Show menstrual cycle data';
-                this.updateCalendar();
-            }
-            
-            editRegimen(day) {
-                this.editingDay = day;
-                const modal = document.getElementById('editModal');
-                const title = document.getElementById('editTitle');
-                const textarea = document.getElementById('editTextarea');
-                
-                title.textContent = `Edit Medication Regimen for Day ${day + 1}`;
-                textarea.value = this.medicationRegimens[day] || '';
-                modal.style.display = 'block';
-                textarea.focus();
-            }
-            
-            saveRegimen() {
-                if (this.editingDay !== null) {
-                    const textarea = document.getElementById('editTextarea');
-                    this.medicationRegimens[this.editingDay] = textarea.value.trim();
-                    this.saveState();
-                    this.updateCalendar();
-                    this.closeEditModal();
-                }
-            }
-            
-            closeEditModal() {
-                document.getElementById('editModal').style.display = 'none';
-                this.editingDay = null;
-            }
-            
-            loadState() {
-                try {
-                    const saved = localStorage.getItem('lunarMedsRegimens');
-                    if (saved) {
-                        return JSON.parse(saved);
-                    }
-                } catch (e) {
-                    console.error('Failed to load state:', e);
-                }
-                
-                // Default to empty regimens for privacy
-                return Array(29).fill("");
-            }
-            
-            exportData() {
-                const data = {
-                    regimens: this.medicationRegimens,
-                    exported: new Date().toISOString(),
-                    version: "1.0"
-                };
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `lunar-calendar-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-            
-            importData(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        
-                        // Support both new format and legacy array format
-                        if (data.regimens && Array.isArray(data.regimens)) {
-                            this.medicationRegimens = data.regimens;
-                        } else if (Array.isArray(data)) {
-                            this.medicationRegimens = data;
-                        } else {
-                            throw new Error('Invalid file format');
-                        }
-                        
-                        // Ensure we have exactly 29 entries
-                        while (this.medicationRegimens.length < 29) {
-                            this.medicationRegimens.push("");
-                        }
-                        this.medicationRegimens = this.medicationRegimens.slice(0, 29);
-                        
-                        this.saveState();
-                        this.updateCalendar();
-                        alert('Data imported successfully!');
-                        
-                    } catch (error) {
-                        alert('Error importing file: Invalid JSON format');
-                        console.error('Import error:', error);
-                    }
-                };
-                reader.readAsText(file);
-                
-                // Reset file input
-                event.target.value = '';
-            }
-            
-            saveState() {
-                try {
-                    localStorage.setItem('lunarMedsRegimens', JSON.stringify(this.medicationRegimens));
-                } catch (e) {
-                    console.error('Failed to save state:', e);
-                }
             }
         }
-        
-        // Initialize the app when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new LunarMedsApp();
-        });
-        
-        // Disclaimer toggle function
-        function toggleDisclaimer() {
-            const full = document.getElementById('disclaimerFull');
-            const header = document.getElementById('disclaimerHeader');
-            const arrow = header.querySelector('span');
-            
-            if (full.style.display === 'none') {
-                full.style.display = 'block';
-                                    arrow.textContent = '▲ Click to collapse';
+
+        this._autosaveTimer = setInterval(() => this.saveAllState(), 30000);
+        window.addEventListener('resize', () => { if (this.menstrualCycleEnabled) this.drawHormoneGraph(); });
+    }
+
+    calculateLunarPhase(date = new Date()) {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+
+        const a = Math.floor((14 - month) / 12);
+        const y = year + 4800 - a;
+        const m = month + 12 * a - 3;
+        let jdn = day + Math.floor((153*m + 2)/5) + 365*y + Math.floor(y/4) - Math.floor(y/100) + Math.floor(y/400) - 32045;
+
+        const refNewMoon = 2451550.26;
+        const synodicMonth = 29.530588861;
+
+        let phase = ((jdn - refNewMoon) % synodicMonth);
+        if (phase < 0) phase += synodicMonth;
+
+        const T = (jdn - 2451545.0) / 36525;
+        const correction = 0.000325 * Math.sin((134.96 + 477198.86 * T) * Math.PI / 180);
+        phase = (phase + correction) % synodicMonth;
+
+        const dayNum = Math.floor(phase) + 1;
+        return { phase, day: dayNum, illumination: (1 - Math.cos(2 * Math.PI * phase / synodicMonth)) / 2 };
+    }
+    updateLunarDay() {
+        const lunarData = this.calculateLunarPhase();
+        this.currentLunarDay = Math.min(lunarData.day, 29);
+    }
+    scheduleUpdate() {
+        setTimeout(() => { this.checkForDayChange(); this.scheduleUpdate(); }, 300000);
+    }
+    checkForDayChange() {
+        const old = this.currentLunarDay;
+        this.updateLunarDay();
+        if (old !== this.currentLunarDay) {
+            this.updateCalendar();
+            if (this.menstrualCycleEnabled) this.drawHormoneGraph();
+        }
+    }
+
+    initializeEventListeners() {
+        document.getElementById('fileInput').addEventListener('change', (e) => this.handleImport(e));
+    }
+
+    setDataView(view, clickedBtnEl) {
+        this.dataView = view;
+        document.querySelectorAll('.view-selector[data-group="data"] .view-button').forEach(btn => btn.classList.remove('active'));
+        if (clickedBtnEl) clickedBtnEl.classList.add('active');
+        this.updateCalendar();
+    }
+    setCalendarView(view, clickedBtnEl) {
+        this.calendarView = view;
+        document.querySelectorAll('.view-selector[data-group="calendar"] .view-button').forEach(btn => btn.classList.remove('active'));
+        if (clickedBtnEl) clickedBtnEl.classList.add('active');
+
+        if (view === 'lunar') {
+            document.getElementById('calendarGrid').style.display = 'grid';
+            document.getElementById('gregorianGrid').style.display = 'none';
+        } else {
+            document.getElementById('calendarGrid').style.display = 'none';
+            document.getElementById('gregorianGrid').style.display = 'block';
+        }
+        this.updateCalendar();
+        this.saveAllState();
+    }
+    updateCalendar() {
+        if (this.calendarView === 'lunar') this.createLunarGrid();
+        else this.createGregorianGrid();
+    }
+
+    createLunarGrid() {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+        for (let i = 0; i < 29; i++) {
+            const dayBox = document.createElement('div');
+            dayBox.className = 'day-box';
+            dayBox.dataset.day = i;
+            grid.appendChild(dayBox);
+        }
+        this.updateLunarCalendar();
+    }
+    updateLunarCalendar() {
+        const currentIdx = (this.currentLunarDay ?? 1) - 1;
+        const boxes = document.querySelectorAll('.day-box');
+
+        boxes.forEach((box, i) => {
+            box.classList.toggle('current-day', i === currentIdx);
+
+            const moonPhase = this.getMoonPhase(i);
+            const menstrualPhase = this.menstrualCycleEnabled ? this.getMenstrualPhase(i) : '';
+            const notes = this.dayNotes[i] || {};
+
+            let html = '';
+            const moonEmoji = this.moonEmojis[Math.floor((i / 29) * 8) % 8];
+            html += `<div class="day-header">${moonEmoji} Day ${i + 1}${i === currentIdx ? ' TODAY' : ''}${i === 28 ? ' (≈1.5d)' : ''}</div>`;
+
+            if (moonPhase) html += `<div class="moon-phase">${moonPhase}</div>`;
+            if (menstrualPhase) html += `<div class="menstrual-phase">${menstrualPhase}</div>`;
+            if (notes.mood) html += `<span class="mood-indicator" title="Mood">${notes.mood}</span>`;
+
+            if (this.dataView === 'medication') {
+                const text = this.medicationRegimens[i] || '';
+                const preview = text ? this.escapeHtml(text).replace(/\n/g,'<br>') : '<span class="muted">Click to edit…</span>';
+                html += `<div class="day-content">${preview}</div>`;
             } else {
-                full.style.display = 'none';
-                                    arrow.textContent = '▼ Click to expand';
+                const feeling = notes.feeling || '';
+                const remedy = notes.remedy || '';
+                const fPrev = feeling ? this.escapeHtml(feeling).replace(/\n/g,'<br>') : '<span class="muted">Click to edit…</span>';
+                const rPrev = remedy ? this.escapeHtml(remedy).replace(/\n/g,'<br>') : '';
+                html += `<div class="day-content">
+                    <div style="font-size:9px;color:var(--sub);margin:2px 0;">How felt:</div>
+                    <div>${fPrev}</div>
+                    ${rPrev ? `<div style="font-size:9px;color:var(--sub);margin:4px 0 2px;">Remedy:</div><div>${rPrev}</div>` : ''}
+                </div>`;
             }
+            box.innerHTML = html;
+            box.onclick = () => this.openEditor(i, i + 1);
+        });
+
+        document.querySelectorAll('.editable-content').forEach(el => {
+            el.addEventListener('blur', (e) => this.saveEdit(e));
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') { e.preventDefault(); this.focusNextDay(e.target); }
+            });
+        });
+        document.querySelectorAll('[data-role="moodrow"]').forEach(row=>{
+            row.addEventListener('click', (e)=>{
+                const btn = e.target.closest('.mood-chip'); if (!btn) return;
+                const day = parseInt(row.dataset.day,10);
+                const mood = btn.dataset.mood;
+                this.setMood(day, mood);
+            });
+        });
+    }
+
+    createGregorianGrid() {
+        const grid = document.getElementById('weekGrid');
+        grid.innerHTML = '';
+
+        const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        weekdays.forEach(day => {
+            const h = document.createElement('div');
+            h.className = 'weekday-header';
+            h.textContent = day;
+            grid.appendChild(h);
+        });
+
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+        const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+        const prevLastDay = new Date(this.currentYear, this.currentMonth, 0);
+
+        const startDow = firstDay.getDay();
+        const daysInMonth = lastDay.getDate();
+        const daysInPrevMonth = prevLastDay.getDate();
+
+        for (let i = startDow - 1; i >= 0; i--) {
+            const d = document.createElement('div');
+            d.className = 'gregorian-day other-month';
+            d.innerHTML = `<div class="gregorian-date">${daysInPrevMonth - i}</div>`;
+            grid.appendChild(d);
         }
-    </script>
+
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const currentDate = new Date(this.currentYear, this.currentMonth, day);
+            const lunarData = this.calculateLunarPhase(currentDate);
+            const lunarDay = Math.min(lunarData.day, 29);
+            const idx = lunarDay - 1;
+
+            const d = document.createElement('div');
+            d.className = 'gregorian-day';
+            if (today.getDate() === day && today.getMonth() === this.currentMonth && today.getFullYear() === this.currentYear) {
+                d.classList.add('today');
+            }
+
+            const moonEmoji = this.moonEmojis[Math.floor((idx / 29) * 8) % 8];
+            const mood = (this.dayNotes[idx]||{}).mood || '';
+            let content = `<div class="g-mood">${mood||''}</div>`;
+            content += `<div class="gregorian-date">${day}</div>`;
+            content += `<div class="gregorian-lunar-info"><span class="g-moon">${moonEmoji}</span> Lunar Day ${lunarDay}${lunarDay===29?' (≈1.5d)':''}</div>`;
+
+            if (this.dataView === 'medication') {
+                const med = this.medicationRegimens[idx] || '';
+                if (med) {
+                    const preview = med.length > 70 ? med.substring(0,70) + '…' : med;
+                    content += `<div style="font-size:9px;">${this.escapeHtml(preview)}</div>`;
+                }
+            } else {
+                const notes = this.dayNotes[idx] || {};
+                if (notes.feeling) {
+                    const preview = notes.feeling.length>70?notes.feeling.substring(0,70)+'…':notes.feeling;
+                    content += `<div style="font-size:9px;color:var(--sub)">${this.escapeHtml(preview)}</div>`;
+                }
+            }
+
+            d.innerHTML = content;
+            d.onclick = () => this.openEditor(idx, lunarDay, {date: currentDate});
+            grid.appendChild(d);
+        }
+
+        const totalCells = grid.children.length;
+        const remaining = 49 - totalCells;
+        for (let day = 1; day <= remaining; day++) {
+            const d = document.createElement('div');
+            d.className = 'gregorian-day other-month';
+            d.innerHTML = `<div class="gregorian-date">${day}</div>`;
+            grid.appendChild(d);
+        }
+
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('monthDisplay').textContent = `${monthNames[this.currentMonth]} ${this.currentYear}`;
+    }
+
+    openEditor(lunarIdx, lunarDayNum, ctxInfo={}){
+        this._editIndex = lunarIdx;
+        const notes = this.dayNotes[lunarIdx] || {};
+        const med = this.medicationRegimens[lunarIdx] || '';
+
+        document.getElementById('edTitle').textContent = `Lunar Day ${lunarDayNum}${lunarDayNum===29?' (≈1.5d)':''}`;
+        const moonPhase = this.getMoonPhase(lunarIdx);
+        const menstrualPhase = this.menstrualCycleEnabled ? this.getMenstrualPhase(lunarIdx) : '';
+        const when = ctxInfo.date ? ` • ${ctxInfo.date.toDateString()}` : '';
+        document.getElementById('edSubInfo').innerHTML = `${moonPhase ? '🌘 '+moonPhase : ''}${menstrualPhase? '  🩸 '+menstrualPhase.replace('<br>',' / ') : ''}${when}`;
+
+        document.getElementById('edMedInput').value = med;
+        document.getElementById('edFeeling').value = notes.feeling || '';
+        document.getElementById('edRemedy').value = notes.remedy || '';
+
+        const row = document.getElementById('edMoodRow');
+        row.innerHTML = this.renderMoodRow(notes.mood);
+        row.onclick = (e)=>{
+            const btn = e.target.closest('.mood-chip'); if (!btn) return;
+            const m = btn.dataset.mood;
+            this.setMood(lunarIdx, m, {silent:true});
+            row.innerHTML = this.renderMoodRow(this.dayNotes[lunarIdx].mood);
+        };
+
+        document.getElementById('tabMed').classList.add('active');
+        document.getElementById('tabNotes').classList.remove('active');
+        document.getElementById('edMed').style.display='block';
+        document.getElementById('edNotes').style.display='none';
+
+        document.getElementById('editorOverlay').style.display='flex';
+    }
+    saveEditor(){
+        const i = this._editIndex;
+        if (i==null) return;
+        this.medicationRegimens[i] = document.getElementById('edMedInput').value.trim();
+        const n = this.dayNotes[i] || {};
+        n.feeling = document.getElementById('edFeeling').value.trim();
+        n.remedy  = document.getElementById('edRemedy').value.trim();
+        this.dayNotes[i] = n;
+        this.saveAllState();
+        this.updateCalendar();
+        closeEditor();
+    }
+
+    saveEdit(event) {
+        const el = event.target;
+        const day = parseInt(el.dataset.day, 10);
+        const type = el.dataset.type;
+        const value = el.innerText.trim();
+
+        if (type === 'medication') {
+            this.medicationRegimens[day] = value;
+        } else if (type === 'feeling') {
+            if (!this.dayNotes[day]) this.dayNotes[day] = {};
+            this.dayNotes[day].feeling = value;
+        } else if (type === 'remedy') {
+            if (!this.dayNotes[day]) this.dayNotes[day] = {};
+            this.dayNotes[day].remedy = value;
+        }
+        this.saveAllState();
+    }
+    focusNextDay(currentEl) {
+        const day = parseInt(currentEl.dataset.day, 10);
+        const type = currentEl.dataset.type;
+        let nextEl = null;
+
+        if (type === 'medication') {
+            if (day < 28) nextEl = document.querySelector(`.editable-content[data-day="${day+1}"][data-type="medication"]`);
+        } else if (type === 'feeling') {
+            nextEl = document.querySelector(`.editable-content[data-day="${day}"][data-type="remedy"]`);
+        } else if (type === 'remedy') {
+            if (day < 28) nextEl = document.querySelector(`.editable-content[data-day="${day+1}"][data-type="feeling"]`);
+        }
+        if (nextEl) nextEl.focus();
+    }
+
+    renderMoodRow(activeEmoji){
+        return this.moodOptions.map(m=>{
+            const isActive = activeEmoji===m.e;
+            return `<div class="mood-chip ${isActive?'active':''}" data-mood="${m.e}" title="${m.k}"><span>${m.e}</span><small>${m.k}</small></div>`;
+        }).join('');
+    }
+    setMood(day, emoji, opts={}){
+        if (!this.dayNotes[day]) this.dayNotes[day]={};
+        this.dayNotes[day].mood = emoji;
+        if (!opts.silent) this.updateCalendar();
+        this.saveAllState();
+    }
+
+    getMoonPhase(dayIdx) {
+        const phases = {0:"New Moon",4:"Waxing Crescent",8:"First Quarter",12:"Waxing Gibbous",15:"Full Moon",19:"Waning Gibbous",23:"Last Quarter",26:"Waning Crescent"};
+        return phases[dayIdx % 29] || '';
+    }
+    getMenstrualPhase(dayIdx) {
+        const shifted = (dayIdx - this.menstrualShift + 29) % 29;
+        if (shifted >= 0 && shifted < 4) return "Menstrual<br>Follicular";
+        if (shifted >= 4 && shifted < 15) return "Follicular";
+        if (shifted >= 15 && shifted < 16) return "Ovulation<br>Luteal";
+        if (shifted >= 16 && shifted < 29) return "Luteal";
+        return '';
+    }
+
+    toggleMenstrualCycle() {
+        this.menstrualCycleEnabled = !this.menstrualCycleEnabled;
+        const button = document.getElementById('cycleButton');
+        const controls = document.getElementById('cycleControls');
+        button.textContent = this.menstrualCycleEnabled ? 'Hide menstrual cycle' : 'Show menstrual cycle';
+        controls.style.display = this.menstrualCycleEnabled ? 'flex' : 'none';
+
+        document.getElementById('hormonePanel').style.display = this.menstrualCycleEnabled ? 'block' : 'none';
+        document.body.classList.toggle('show-graph', this.menstrualCycleEnabled);
+        if (this.menstrualCycleEnabled) this.drawHormoneGraph();
+
+        this.saveAllState();
+        this.updateCalendar();
+    }
+    shiftMenstrualCycle(direction) {
+        this.menstrualShift = (this.menstrualShift + direction + 29) % 29;
+        document.getElementById('shiftDisplay').textContent = `Shift: ${this.menstrualShift}`;
+        if (this.menstrualCycleEnabled) this.drawHormoneGraph();
+        this.updateCalendar();
+        this.saveAllState();
+    }
+
+    changeMonth(direction) {
+        this.currentMonth += direction;
+        if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
+        else if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
+        this.createGregorianGrid();
+    }
+    goToToday() {
+        const today = new Date();
+        this.currentMonth = today.getMonth();
+        this.currentYear = today.getFullYear();
+        this.createGregorianGrid();
+    }
+
+    exportData() {
+        const lunarData = this.calculateLunarPhase();
+        const data = {
+            regimens: this.medicationRegimens,
+            notes: this.dayNotes,
+            menstrualShift: this.menstrualShift,
+            menstrualVisible: this.menstrualCycleEnabled,
+            exported: new Date().toISOString(),
+            currentLunarDay: this.currentLunarDay,
+            lunarPhaseData: { phase: lunarData.phase, illumination: (lunarData.illumination * 100).toFixed(1) + '%' },
+            version: "3.2"
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url;
+        a.download = `lunar-calendar-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    handleImport(event) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+
+                if (Array.isArray(data)) {
+                    this.medicationRegimens = data;
+                } else if (data.regimens && Array.isArray(data.regimens)) {
+                    this.medicationRegimens = data.regimens;
+                }
+                if (data.notes) this.dayNotes = data.notes;
+
+                if (typeof data.menstrualShift === 'number') {
+                    this.menstrualShift = data.menstrualShift;
+                    document.getElementById('shiftDisplay').textContent = `Shift: ${this.menstrualShift}`;
+                }
+                if (typeof data.menstrualVisible === 'boolean') {
+                    this.menstrualCycleEnabled = data.menstrualVisible;
+                    document.getElementById('cycleButton').textContent = this.menstrualCycleEnabled ? 'Hide menstrual cycle' : 'Show menstrual cycle';
+                    document.getElementById('cycleControls').style.display = this.menstrualCycleEnabled ? 'flex' : 'none';
+                    document.getElementById('hormonePanel').style.display = this.menstrualCycleEnabled ? 'block' : 'none';
+                    document.body.classList.toggle('show-graph', this.menstrualCycleEnabled);
+                }
+
+                while (this.medicationRegimens.length < 29) this.medicationRegimens.push("");
+                this.medicationRegimens = this.medicationRegimens.slice(0, 29);
+
+                while (this.dayNotes.length < 29) this.dayNotes.push({feeling:"", remedy:"", mood:""});
+                this.dayNotes = this.dayNotes.slice(0, 29);
+
+                this.saveAllState();
+                this.updateCalendar();
+                if (this.menstrualCycleEnabled) this.drawHormoneGraph();
+                alert('Data imported successfully!');
+            } catch (err) {
+                alert('Error importing file: Invalid JSON format');
+                console.error('Import error:', err);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+    loadState(key) {
+        try { const saved = localStorage.getItem(key); if (saved) return JSON.parse(saved); }
+        catch (e) { console.error(`Failed to load ${key}:`, e); }
+        return null;
+    }
+    saveAllState() {
+        try {
+            localStorage.setItem('lunarMedsRegimens', JSON.stringify(this.medicationRegimens));
+            localStorage.setItem('lunarMedsDayNotes', JSON.stringify(this.dayNotes));
+            localStorage.setItem('lunarMedsSettings', JSON.stringify({
+                menstrualShift: this.menstrualShift,
+                menstrualVisible: this.menstrualCycleEnabled,
+                darkMode: document.body.classList.contains('dark'),
+                calendarView: this.calendarView
+            }));
+        } catch (e) { console.error('Failed to save state:', e); }
+    }
+
+    drawHormoneGraph(){
+        const canvas = document.getElementById('hormoneGraph');
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(220 * dpr);
+        ctx.scale(dpr, dpr);
+
+        const W = rect.width, H = 220;
+        const pad = {l:28, r:12, t:22, b:24};
+        const plotW = W - pad.l - pad.r;
+        const plotH = H - pad.t - pad.b;
+
+        ctx.clearRect(0,0,W,H);
+        ctx.fillStyle = getCss('--surface'); ctx.fillRect(0,0,W,H);
+
+        ctx.strokeStyle = getCss('--grid'); ctx.lineWidth=1;
+        for (let i=0;i<=6;i++){ const y=pad.t+i*(plotH/6); line(ctx,pad.l,y,pad.l+plotW,y); }
+
+        ctx.fillStyle = getCss('--sub'); ctx.font = '11px system-ui, -apple-system, Segoe UI, Helvetica, Arial'; ctx.textAlign='center';
+        for (let d=1; d<=29; d+=4){ const x = pad.l + (plotW*(d-1)/28); ctx.fillText(String(d), x, H-8); }
+
+        ctx.fillStyle = getCss('--sub'); ctx.textAlign='center'; ctx.font = '12px system-ui, -apple-system, Segoe UI, Helvetica, Arial';
+        const phaseRanges = [
+            {label:'Menstrual', start:1, end:4},
+            {label:'Follicular', start:4, end:14},
+            {label:'Ovulation', start:14, end:16},
+            {label:'Luteal', start:16, end:29},
+        ];
+        const xOfDay = (d)=> pad.l + plotW * (d-1)/28;
+        const yOfVal = (v)=> pad.t + plotH * (1-v);
+        phaseRanges.forEach(p=>{ const mid=(xOfDay(p.start)+xOfDay(p.end))/2; ctx.fillText(p.label, mid, 14); });
+
+        const E2=[], P4=[];
+        for(let d=1; d<=29; d++){
+            let vE, vP;
+            if (d<=5) vE = 0.10 + 0.01*d;
+            else if (d<=13) vE = 0.12 + 0.06*(d-5);
+            else if (d===14) vE = 1.00;
+            else if (d<=17) vE = 0.45 - 0.15*(d-15);
+            else if (d<=23) vE = 0.45 + 0.06*(d-17);
+            else vE = Math.max(0.12, 0.78 - 0.12*(d-23));
+            vE = Math.max(0.06, Math.min(1.0, vE));
+            E2.push({d:vE});
+
+            if (d<=14) vP = 0.04;
+            else if (d<=22) vP = 0.10 + 0.10*(d-14);
+            else vP = Math.max(0.05, 1.00 - 0.12*(d-22));
+            vP = Math.max(0.04, Math.min(1.0, vP));
+            P4.push({d:vP});
+        }
+
+        const drawSeries=(pts,color)=>{
+            ctx.strokeStyle=color; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round';
+            ctx.beginPath();
+            pts.forEach((p,i)=>{ const x=xOfDay(i+1), y=yOfVal(p.d); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+            ctx.stroke();
+        }
+        drawSeries(E2,'#ff4fb3');
+        drawSeries(P4,'#45a3ff');
+
+        const legend=[{label:'Estradiol',color:'#ff4fb3'},{label:'Progesterone',color:'#45a3ff'}];
+        let lx=pad.l+8, ly=pad.t+42;
+        legend.forEach(item => {
+            // draw colored dash
+            ctx.strokeStyle = item.color;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.setLineDash([]); // solid dash
+            line(ctx, lx, ly, lx + 18, ly);
+
+            // draw label text
+            ctx.fillStyle = getCss('--text');
+            ctx.font = '12px system-ui, -apple-system, Segoe UI, Helvetica, Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(item.label, lx + 26, ly + 4);
+
+            ly += 18;
+        });
+
+        const todayLunar = this.currentLunarDay || 1;
+        const shifted = ((todayLunar - 1 - this.menstrualShift + 29) % 29) + 1;
+        const mx = xOfDay(shifted);
+        ctx.save(); ctx.strokeStyle='rgba(255,203,72,.85)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); line(ctx,mx,pad.t-4,mx,pad.t+plotH+4); ctx.restore();
+        ctx.fillStyle='rgba(255,203,72,.95)'; ctx.font='12px system-ui, -apple-system, Segoe UI, Helvetica, Arial'; ctx.textAlign='center';
+        ctx.fillText(`You: Day ${shifted}`, mx, pad.t-6);
+    }
+
+    escapeHtml(str) { return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+}
+
+function line(ctx,x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function getCss(name){return getComputedStyle(document.body).getPropertyValue(name).trim();}
+
+let app;
+
+function setDataView(view, btn) { if (app) app.setDataView(view, btn); }
+function setCalendarView(view, btn) { if (app) app.setCalendarView(view, btn); }
+function toggleMenstrualCycle() { if (app) app.toggleMenstrualCycle(); }
+function shiftMenstrualCycle(direction) { if (app) app.shiftMenstrualCycle(direction); }
+function changeMonth(direction) { if (app) app.changeMonth(direction); }
+function goToToday() { if (app) app.goToToday(); }
+function saveEditor(){ if (app) app.saveEditor(); }
+
+function toggleDropdown(){ document.getElementById('dataDropdown').classList.toggle('show'); }
+function importData(){ document.getElementById('fileInput').click(); toggleDropdown(); }
+function exportData(){ if (app) app.exportData(); toggleDropdown(); }
+
+function toggleDisclaimer() {
+    const full = document.getElementById('disclaimerFull');
+    const header = document.getElementById('disclaimerHeader');
+    const arrow = header ? header.querySelector('span') : null;
+    if (!full || !arrow) return;
+    if (full.style.display === 'none') { full.style.display = 'block'; arrow.textContent = '▲ Click to collapse'; }
+    else { full.style.display = 'none'; arrow.textContent = '▼ Click to expand'; }
+}
+
+function toggleDarkMode(){
+    document.body.classList.toggle('dark');
+    updateDarkToggleLabel();
+    if (app){ app.saveAllState(); if (app.menstrualCycleEnabled) app.drawHormoneGraph(); }
+}
+function updateDarkToggleLabel(){
+    const b = document.getElementById('darkToggle');
+    if (!b) return;
+    const dark = document.body.classList.contains('dark');
+    b.textContent = dark ? '☀️ Light' : '🌙 Dark';
+}
+
+function showConsent(){ document.getElementById('consentOverlay').style.display='flex'; }
+function hideConsent(){ document.getElementById('consentOverlay').style.display='none'; document.getElementById('appContainer').style.display='block'; }
+function acceptConsent(){ localStorage.setItem('lunarMedsConsent','true'); hideConsent(); app = new LunarMedsApp(); }
+function exportTemplate(){
+    const empty = {
+        regimens: Array(29).fill(""),
+        notes: Array.from({length:29},()=>({feeling:"", remedy:"", mood:""})),
+        menstrualShift: 0,
+        menstrualVisible: false,
+        version: "template-1.0"
+    };
+    const blob = new Blob([JSON.stringify(empty,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='lunar-tracker-empty-template.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function closeEditor(){ document.getElementById('editorOverlay').style.display='none'; }
+function switchEdTab(which){
+    document.getElementById('tabMed').classList.toggle('active', which==='med');
+    document.getElementById('tabNotes').classList.toggle('active', which==='notes');
+    document.getElementById('edMed').style.display = which==='med' ? 'block':'none';
+    document.getElementById('edNotes').style.display = which==='notes' ? 'block':'none';
+}
+
+window.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown-container')) {
+        const dd = document.getElementById('dataDropdown'); if (dd) dd.classList.remove('show');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('consentAccept').addEventListener('click', acceptConsent);
+    const cExp = document.getElementById('consentExport'); if (cExp) cExp.addEventListener('click', exportTemplate);
+
+    const consented = localStorage.getItem('lunarMedsConsent') === 'true';
+    if (!consented) {
+        showConsent();
+    } else {
+        document.getElementById('appContainer').style.display='block';
+        app = new LunarMedsApp();
+    }
+});
+</script>
 </body>
 </html>
