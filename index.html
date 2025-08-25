@@ -1126,7 +1126,7 @@ class LunarMedsApp {
         const m = month + 12 * a - 3;
         let jdn = day + Math.floor((153*m + 2)/5) + 365*y + Math.floor(y/4) - Math.floor(y/100) + Math.floor(y/400) - 32045;
 
-        const refNewMoon = 2451550.26;
+        const refNewMoon = 2451549.26;
         const synodicMonth = 29.530588861;
 
         let phase = ((jdn - refNewMoon) % synodicMonth);
